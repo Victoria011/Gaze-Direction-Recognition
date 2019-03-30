@@ -1,0 +1,8 @@
+frame1.png frame1.png 5 64 128 192 128
+frame2.png frame2.png 5 64 128 192 128
+frame3.png frame3.png 5 64 128 192 128
+frame4.png frame4.png 5 64 128 192 128
+frame5.png frame5.png 5 64 128 192 128
+frame6.png frame6.png 5 64 128 192 128
+frame7.png frame7.png 5 64 128 192 128
+frame8.png frame8.png 5 64 128 192 128
