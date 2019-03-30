@@ -211,7 +211,7 @@ class DataGenerator:
 		while True:
 			train_img = np.zeros((batch_size, 256,256,3), dtype = np.float32)
 			# TODO now=[4,4,256,256,3]change size 
-			train_gtmap = np.zeros((batch_size, stacks, 256, 256, len(self.direction)), np.float32)
+			train_gtmap = np.zeros((batch_size, stacks, 64, 64, len(self.direction)), np.float32)
 			train_weights = np.zeros((batch_size, len(self.direction)), np.float32)
 			i = 0
 			while i < batch_size:
@@ -221,18 +221,19 @@ class DataGenerator:
 					elif sample_set == 'valid':
 						name = random.choice(self.valid_set)
 					eyes = self.data_dict[name]['eyes']
-					gtMap = self.data_dict[name]['gtMap']
+					gtname = self.data_dict[name]['gtMap']
 					direction = self.data_dict[name]['direction']
 					weight = np.asarray(self.data_dict[name]['weights'])
 					train_weights[i] = weight 
 					img = self.open_img(name,0)
-					gtMap = self.open_img(gtMap,1)
+					gtMap = self.open_img(gtname,1)
+					gtMap = cv2.resize(gtMap, dsize=(64, 64), interpolation=cv2.INTER_CUBIC)
 					# # hm = self.generate_hm(img_name = name, direction = direction, pts=eyes)
 					# # hm = scm.imresize(hm, (256,256))
 					# # img, hm = self._augment(img, hm) # TODO augmentation??
 					gtMap = np.expand_dims(gtMap, axis = 0)
 					gtMap = np.repeat(gtMap, stacks, axis = 0)
-					print(gtMap.shape)
+					# print('i = ',i)
 					if normalize:
 						train_img[i] = img.astype(np.float32) / 255
 						train_gtmap[i] = gtMap.astype(np.float32) / 255
@@ -241,7 +242,8 @@ class DataGenerator:
 						train_gtmap[i] = gtMap.astype(np.float32)
 					i = i + 1
 				except :
-					print('error file: ', name)
+					print('error file: ',name , gtname,' i = ',i)
+					break
 			yield train_img, train_gtmap, train_weights
 
 

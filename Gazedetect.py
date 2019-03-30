@@ -144,17 +144,8 @@ class Gazedetector:
 		cam.release()
 		print('processing video done\n')
 
-	def _transform(self,image,filename = None):
-		# filename : (bool)save img or not
-		# if isinstance(image, str):
-		# 	image = cv2.cvtColor(cv2.imread(image), cv2.COLOR_BGR2RGB)   
-		# dets = self.detector(image)
-		# shape = self.predictor(image,dets[0])
-		# coords = np.zeros((68, 2), dtype='float')
-		# for i in range(0,68):
-		# 	coords[i] = (float(shape.part(i).x),float(shape.part(i).y))
-		coords = getPts(image)
-
+	def _transform(self,image,coords, filename = None): 
+		# single img transformation
 		row_idx1 = [0,16,36,27,45,48]
 		points1 = coords[row_idx1,:]
 		M = self.transformation_from_points(points1)
@@ -174,14 +165,16 @@ class Gazedetector:
 		for names in files:
 			print(names)
 			img = dlib.load_rgb_image(names)
+			coords = self.getPts(image)
 			count+=1
 			filename = out_dir+'/frame'+str(count)+'.png'
-			output = self._transform(img,filename)
+			output = self._transform(img,coords,filename)
 		return output # TODO need return or not?
 
 	def detectGaze(self,image,filename = None):
-		print(filename)
-		frame = self._transform(image)
+		# print(filename)
+		coords = self.getPts(image)
+		frame = self._transform(image, coords)
 
 		# image = frame.swapaxes(2,1).swapaxes(1,0)/255.0 # TODO not sure keep it or not
 		# input = torch.from_numpy(image).float().unsqueeze(0) #TODO find out waht it does

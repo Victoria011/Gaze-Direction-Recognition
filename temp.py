@@ -3,8 +3,15 @@ import dataGen
 import glob
 import dlib
 import matplotlib.pyplot as plt
+import numpy as np
+import cv2
+
 gazedetector = Gazedetect.Gazedetector('Dissertation/Action-Units-Heatmaps/shape_predictor_68_face_landmarks.dat',enable_cuda=False)
-# path_imgs = 'Dissertation/local_Dataset/video_frame/front/frame1.png'
+path_imgs = 'Dissertation/local_Dataset/video_frame/front/frame1.png'
+img = dlib.load_rgb_image(path_imgs)
+gtMap = cv2.resize(img, dsize=(64, 64), interpolation=cv2.INTER_CUBIC)
+filename = 'Dissertation/local_Dataset/video_frame/front/frame12.png'
+plt.imsave(filename, gtMap)
 # pts = gazedetector.getPts(path_imgs)
 # print(pts)
 # files = sorted(glob.glob(path_imgs + '/*.png'))
@@ -39,14 +46,14 @@ gazedetector = Gazedetect.Gazedetector('Dissertation/Action-Units-Heatmaps/shape
 # Gazedetector.transform(img_dir = img_dir, out_dir = out_dir)
 
 # heatmap generation
-img_dir = 'Dissertation/local_Dataset/video_frame/front'
-gt_dir = 'Dissertation/local_Dataset/video_frame/front/groundtruth'
-dataset = dataGen.DataGenerator(img_dir,gt_dir)
-# single img
-img_name = 'frame1.png'
-out_name = 'Dissertation/local_Dataset/video_frame/front/frame11.png'
-dataset.generate_hm(img_name = img_name, direction = 5, pts=[[91, 125], [156, 123]], out_name = out_name)
-# all imgs in dir
+# img_dir = 'Dissertation/local_Dataset/video_frame/front'
+# gt_dir = 'Dissertation/local_Dataset/video_frame/front/groundtruth'
+# dataset = dataGen.DataGenerator(img_dir,gt_dir)
+# # single img
+# img_name = 'frame1.png'
+# out_name = 'Dissertation/local_Dataset/video_frame/front/frame11.png'
+# dataset.generate_hm(img_name = img_name, direction = 5, pts=[[91, 125], [156, 123]], out_name = out_name)
+# # all imgs in dir
 # out_dir = 'Dissertation/local_Dataset/video_frame/front/groundtruth'
 # DataGenerator.generate_hm(img_dir = img_dir, out_dir = out_dir)
 
