@@ -1,11 +1,11 @@
 import configparser
 from dataGen import DataGenerator
-from hourglass import HourglassModel
+# from hourglass import HourglassModel
 import tensorflow as tf
 import numpy as np
 import dlib
 import cv2
-# from test_hg import HourglassModel
+from test_hg import HourglassModel
 
 def process_config(conf_file):
 	"""
@@ -35,9 +35,6 @@ if __name__ == '__main__':
 	# process config
 	print('--Parsing Config File')
 	params = process_config('config.cfg')
-	print('nfeats=',params['nfeats'],' nstacks=',params['nstacks'],' output_dim=',params['output_dim'],' batch_size=',params['batch_size'])
-	print('dropout_rate=',params['dropout_rate'], ' learning_rate=',params['learning_rate'], ' learning_rate_decay=',params['learning_rate_decay'], ' decay_step=',params['decay_step'])
-	print('nepochs=',params['nepochs'], ' epoch_size=',params['epoch_size'], ' saver_step=',params['saver_step'])
 
 	# load GazeDetector
 	# gazedetector = Gazedetect.Gazedetector('shape_predictor_68_face_landmarks.dat',enable_cuda=True)

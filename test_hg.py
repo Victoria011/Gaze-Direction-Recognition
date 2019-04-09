@@ -113,13 +113,16 @@ class HourglassModel():
 	def get_accuracy(self):
 		return self.imgAccur
 
+	# ==================== Hourglass Network ========================
+
 	def generate_model(self):
 		# create complete graph
 		print('Creating Model')
 		t_start = time.time()
 		with tf.device(self.gpu):
 			with tf.name_scope('inputs'):
-				self.x = tf.placeholder(tf.float32, [None, 256, 256, 3]) # 'None' cuz define at run time
+				self.x = tf.placeholder(tf.float32, [None, 128, 128, 3]) # 'None' cuz define at run time
+				# self.x = tf.placeholder(tf.float32, [None, 256, 256, 3]) # 'None' cuz define at run time
 				if self.w_loss: #TODO what is does?
 					self.weights = tf.placeholder(dtype = tf.float32, shape = (None, self.outDim))
 				# Shape Ground Truth Map: batchSize x nStack x 64 x 64 x outDim
@@ -244,15 +247,14 @@ class HourglassModel():
 	def fullNetwork(self, inputs, nFeat = 256, nStack = 4, outDim = 2):
 		with tf.name_scope('model'):
 			with tf.name_scope('preprocessing'):
-				pad_1 = tf.pad(inputs, np.array([[0,0],[2,2],[2,2],[0,0]]), name='pad_1')
+				pad_1 = tf.pad(inputs, np.array([[0,0],[3,3],[3,3],[0,0]]), name='pad_1')
 				# pad_1 = inputs
-				conv_1 = self.conv2d(pad_1, 64, kernel_size=6, strides=2) 
+				conv_1 = self.conv2d(pad_1, 64, kernel_size=6, strides=1) 
 				# print("conv_1 shape = " + str(conv_1.shape))
-				#64
+				#
 				norm_1 = tf.contrib.layers.batch_norm(conv_1, 0.9, epsilon=1e-5, activation_fn = tf.nn.relu)
-				#64 -> 128 1
+				#
 				conv_2 = self.bottleneck(norm_1, int(nFeat/2), 1, int(nFeat/2), name = 'conv_2')
-				# print("conv_2 shape = " + str(conv_2.shape))
 
 				pol_1 = tf.contrib.layers.max_pool2d(conv_2, [2,2], [2,2], padding= 'VALID')
 
@@ -284,6 +286,8 @@ class HourglassModel():
 
 			return tf.stack(out, axis= 1 , name = 'final_output')
 
+	# ==================== Accuracy Calculation ========================
+
 	def _argmax(self, tensor):
 		""" ArgMax
 		Args:
@@ -295,7 +299,7 @@ class HourglassModel():
 		argmax = tf.argmax(resh,0)
 		return (argmax // tensor.get_shape().as_list()[0], argmax % tensor.get_shape().as_list()[0])
 
-	def _compute_err(self, u, v, pts=None):
+	def _compute_err(self, u, v=None, pts=None):
 		""" Given 2 tensors compute the euclidean distance (L2) between maxima locations
 		Args:
 			u		: 2D - Tensor (Height x Width : 64x64 )

@@ -1,4 +1,4 @@
-from hourglass import HourglassModel
+from test_hg import HourglassModel
 from time import time, clock, sleep
 from train_launcher import process_config
 from dataGen import DataGenerator
@@ -89,15 +89,15 @@ class Gazedetector:
 			if out_dir is None:
 				print('Please specify output path or filename.')
 			else:
-				# for i in range(len(output.shape[0])):
-				filename = out_dir+'/0000.png'
-				if self.params['output_dim'] == 1:
-					output=output[:,:,:,0]
-				cv2.imwrite(filename,output[i])
+				for i in range(len(output.shape[0])):
+					filename = out_dir+'/'+str(i)+'.png'
+					if self.params['output_dim'] == 1:
+						output=output[:,:,:,0]
+					cv2.imwrite(filename,output[i])
 		else:
-			# for i in range(len(filename)):
-			tmp=output[0,:,:,0]*255
-			cv2.imwrite(filename,tmp.astype(np.uint8))
+			for i in range(len(filename)):
+				tmp=output[0,:,:,i]*255
+				cv2.imwrite(filename[i],tmp.astype(np.uint8))
 
 	def single_img_pred(self,image=None,filename = None, transform=False, debug = False, sess = None):
 		""" predicting single image
@@ -109,7 +109,7 @@ class Gazedetector:
 		if transform:
 			coords = self.dataset.getPts(image)
 			image = self.dataset._transform(image, coords)
-		if image.shape == (64,64,3):
+		if image.shape == (128,128,3):
 			if sess is None:
 				out = self.sess.run(self.model.output, feed_dict={self.model.x : np.expand_dims(image, axis = 0)})
 			else:
@@ -147,6 +147,7 @@ class Gazedetector:
 				gtMap = gtMap.eval(session=sess)		
 			self.model.set_label(gtMap)
 
+			print(gtMap.shape)
 			if(gtMap.shape[1:]!=(4,64,64,1)):
 				accuracy = self.model._accur(output[:, self.params['nstacks'] - 1, :, :,0], gtMap[:, params['nstacks'] - 1, :, :,0], 1)
 				if sess is None:
@@ -158,17 +159,14 @@ class Gazedetector:
 				print('Ground Truth Image Size does not match placeholder shape')
 				raise Exception
 		else:
-			err = tf.to_float(0)
-			# right_err = tf.to_float(0)
+			left_err = tf.to_float(0)
+			right_err = tf.to_float(0)
 			pts = np.float32(pts)
-			err = tf.add(err, self.model._compute_err(output[0,self.params['nstacks'] - 1,:,:,0], pts=pts[0]))
-			u_y,u_x = self.model._argmax(output[0, self.params['nstacks'] - 1, :, :,0])
-			# err_r = tf.add(right_err, self.model._compute_err(output[0,self.params['nstacks'] - 1,:,:,1], pts=pts[1]))
-			# err_l,err_r = self.sess.run([err_l,err_r])
-			err,u_y,u_x = self.sess.run([err,u_y,u_x])
-			accuracy=err
-			print(accuracy)
-			print('Max coords: ',u_y,u_x)
+			err_l = tf.add(left_err, self.model._compute_err(output[0,self.params['nstacks'] - 1,:,:,0], pts=pts[0]))
+			err_r = tf.add(right_err, self.model._compute_err(output[0,self.params['nstacks'] - 1,:,:,1], pts=pts[1]))
+			err_l,err_r = self.sess.run([err_l,err_r])
+			accuracy=[err_l,err_r]
+			print(err_l,err_r)
 
 		if debug:
 			print('Accuracy Calculation: ', time() - t, ' sec.')
@@ -201,20 +199,20 @@ if __name__ == '__main__':
 	# predict.color_palette()
 	# predict.LINKS_JOINTS()
 	gazedetector.model_init()
-	gazedetector.load_model(tf.train.latest_checkpoint('result/result_01/model/'))
+	gazedetector.load_model(tf.train.latest_checkpoint('./result/result/model/'))
 
 	if sys.argv[1] == '1':
 	# for predicting a single image
-		image_path = 'train_x/frame0.png'
+		image_path = 'train_1/test/399.png'
 		pred_img = gazedetector.single_img_pred(filename = image_path,debug=True)
 		if len(sys.argv) == 3:
-			gazedetector.save_output(pred_img[:, params['nstacks'] - 1, :, :,:],'train_x/frame100.png')
+			gazedetector.save_output(pred_img[:, params['nstacks'] - 1, :, :,:],['train_1/test/x_10_l.png','train_1/test/x_10_r.png'])
 	elif sys.argv[1] == '2':
 		# calculate single accuracy
-		image_path = 'train_x/frame0.png'
+		image_path = 'train_1/test/399.png'
 		pred_img = gazedetector.single_img_pred(filename = image_path,debug=True)
-		gazedetector.save_output(pred_img[:, params['nstacks'] - 1, :, :,:],'train_x/frame100.png')
-		pts=[[25,26],[25,26]]
+		gazedetector.save_output(pred_img[:, params['nstacks'] - 1, :, :,:],['train_1/test/x_10_l.png','train_1/test/x_10_r.png'])
+		pts=[[21,26],[50,37]]
 		accuracy = gazedetector._accuracy(pred_img,pts=pts,debug=True)
 	elif sys.argv[1] == '3':
 		# calculate single confidence

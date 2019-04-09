@@ -11,7 +11,7 @@ import time
 
 class DataGenerator:
 	# split data into Train, Validation, Test sets
-	def __init__(self, img_dir=None, gt_dir = None,train_data_file = None,outDim = 1,path_to_predictor='shape_predictor_68_face_landmarks.dat'):
+	def __init__(self, img_dir=None, gt_dir = None,train_data_file = None,outDim = 2,path_to_predictor='shape_predictor_68_face_landmarks.dat'):
 		""" Initializer
 		Args:
 			joints_name			: List of joints condsidered
@@ -31,6 +31,7 @@ class DataGenerator:
 			self.direction=['left','right']
 		elif outDim ==1:
 			self.direction=['gaze']
+		# self.direction = ['close','upleft','up','upright','left','front','right','downleft','down','downright']
 		if img_dir != None:
 			self.images = sorted(glob.glob(img_dir + '/*.png'))
 
@@ -74,14 +75,20 @@ class DataGenerator:
 	def generate_hm(self, img_name = None, img_dir = None, direction = 0, size = 64, pts=None, out_name = None, out_dir = None):
 		# single img
 		if img_name != None:
+			# img = self.open_img(img_name,0)
 			if pts is None:
 				if direction != -1:
 					pts=self.get_center_coord(direction,version=0) #TODO version
 				else:
 					print('Please specify direction / center point coords to generate heatmap.')
 					return
-			im = np.zeros((size, size, len(self.direction)), dtype = np.float32)
-			im[:,:,0] = self._gaussian(size, size, pts[0][0],pts[0][1],sigma= 3)
+			im = np.zeros((size, size, 2), dtype = np.float32)
+			for i in range(2):
+				if not(np.array_equal(pts[i], [-1,-1])):
+					# s = int(np.sqrt(size) * size * 10 / 4096) + 2
+					im[:,:,i] = self._gaussian(size, size, pts[i][0],pts[i][1],sigma= 3)
+				else:
+					im[:,:,i] = np.zeros((height,width))
 		# all img in a dir
 		elif img_dir != None:
 			count = 0
@@ -150,28 +157,21 @@ class DataGenerator:
 		output_image = cv2.warpAffine(in_image,trans_mat,dst_size)
 		return output_image
 
-	def crop_im(self,image,points=None,size=(64,64)):
+	def crop_im(self,image,points=None,size=(128,128)):
 		if points is None:
 			points = np.array([127., 124.], np.int64) # TODO find outNo.28 points middle eye
-		XC = 32
-		YC = 64
-		leftx = int(round(max(XC-32,0)))
-		rightx = int(round(min(XC+32,image.shape[1])))
+		# XC = points[27][0]
+		# YC = points[27][1]
+		XC = 128
+		YC = 128
+		leftx = int(round(max(XC-64,1)))
+		rightx = int(round(min(XC+64,image.shape[1])))
 
-		miny = int(round(max(YC-32,0)))
-		maxy = int(round(min(YC+32,image.shape[0])))
+		miny = int(round(max(YC-64,1)))
+		maxy = int(round(min(YC+64,image.shape[0])))
 		# print(leftx,rightx,miny,maxy)
-		image_l = image[miny:maxy,leftx:rightx,: ]
-
-		XC = 96
-		YC = 64
-		leftx = int(round(max(XC-32,0)))
-		rightx = int(round(min(XC+32,image.shape[1])))
-
-		miny = int(round(max(YC-32,0)))
-		maxy = int(round(min(YC+32,image.shape[0])))
-		image_r = image[miny:maxy,leftx:rightx,: ]
-		return (image_l,image_r)
+		image = image[miny:maxy,leftx:rightx,: ]
+		return image
 
 	def _transform(self,image,coords, filename = None): 
 		# single img transformation
@@ -322,7 +322,7 @@ class DataGenerator:
 			See Args section in self._generator
 		"""
 		while True:
-			train_img = np.zeros((batch_size, 64,64,3), dtype = np.float32) #TODO just test with 128
+			train_img = np.zeros((batch_size, 128,128,3), dtype = np.float32) #TODO just test with 128
 			train_gtmap = np.zeros((batch_size, stacks, 64, 64, len(self.direction)), np.float32)
 			train_weights = np.zeros((batch_size, len(self.direction)), np.float32)
 			train_direction = np.zeros(batch_size, np.float32)
@@ -339,6 +339,7 @@ class DataGenerator:
 					weight = np.asarray(self.data_dict[name]['weights'])
 					train_weights[i] = weight 
 					img = self.open_img(name,0)
+					# img = cv2.resize(img, dsize=(128,128), interpolation=cv2.INTER_AREA)
 					gtMap = self.generate_hm('test.txt', direction = train_direction[i], size = 64, pts=eyes)
 					gtMap = np.expand_dims(gtMap, axis = 0)
 					gtMap = np.repeat(gtMap, stacks, axis = 0) # 4*64*64*2
@@ -418,6 +419,8 @@ class DataGenerator:
 			filename = os.path.join(self.gt_dir_r, name)
 		
 		img = cv2.imread(filename)
+		# print(img.shape)
+		# print(type(img))
 		if color == 'RGB':
 			img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 			return img
@@ -431,7 +434,7 @@ class DataGenerator:
 
 	def get_center_coord(self,direction,version=0, deltx=-1, delty=-1):
 		if version==0: # eye center point based on true pts coord
-			coord = [[[0,0],[0,0]],[[25,26],[25,26]],[[35, 24],[35, 24]],[[42,29],[42,29]],[[25,30],[25,30]],[[32,31],[32,31]],[[43, 33],[43, 33]],[[25, 38],[25, 38]],[[33, 42],[33, 42]],[[39, 38],[39, 38]]]
+			coord = [[[0,0],[0,0]],[[12, 30],[45, 30]],[[16, 30],[48, 30]],[[20,30],[51, 30]],[[12, 32],[45, 33]],[[16, 32],[48, 32]],[[20, 31],[52, 32]],[[13, 35],[45, 35]],[[16, 35],[47, 37]],[[19, 37],[51, 37]]]
 			coord = coord[direction]
 		elif version==1: # eye center on 64*64 gtMap slicing into 3x6 grid
 			coord = [[[0,0],[0,0]],[[5, 10],[37, 10]],[[16, 10],[48, 10]],[[27, 10],[59, 10]],[[5, 32],[37, 32]],[[16, 32],[48, 32]],[[27, 32],[59, 32]],[[5, 53],[37, 53]],[[16, 53],[48, 53]],[[27, 53],[59, 53]]]

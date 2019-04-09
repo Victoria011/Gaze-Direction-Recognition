@@ -16,7 +16,7 @@ def open_img(name, flag, color = 'RGB'):
         color   : Color Mode (RGB/BGR/GRAY)
     """
     if flag == 0: # img
-        filename = os.path.join('train_x/', name)
+        filename = os.path.join('../train_1/x', name)
     elif flag == 1: # gtMap left
         filename = os.path.join('train_1/left/', name)
     elif flag == 2: # gtMap right
